@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -13,3 +14,4 @@ typedef struct Block {
 
 void init_block(Block* block, size_t alsize, bool is_free);
 void reuse_block(Block* block, size_t alsize);
+void print_block(Block* block);

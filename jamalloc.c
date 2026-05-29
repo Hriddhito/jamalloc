@@ -69,8 +69,6 @@ void* jamalloc(size_t size) {
 
     Block* new_block=NULL;
 
-    printf("prev_block=%p ", tail); 
-
     new_block = get_free_block(alsize);
     if (!new_block) {
         new_block = create_new_block(&heap_ptr, alsize);
@@ -79,16 +77,6 @@ void* jamalloc(size_t size) {
     }
 
     if (!new_block) return NULL;
-
-    //For debugging
-    Block* block = new_block;
-    printf("block=%p payload=%p end=%p size=%zu\n",
-    block,
-    block + 1,
-    (char*)(block + 1) + block->size,
-    block->size
-    );
-    //End debugging
 
     return (void*)(new_block+1);
 }
@@ -106,5 +94,37 @@ void dump_heap() {
 
         if ((i + 1) % 16 == 0)
             printf("\n");
+    }
+}
+
+void print_blocks() {
+    Block* curr_block = head;
+    while(curr_block) {
+        print_block(curr_block);
+        curr_block = curr_block->next;
+    }
+}
+
+void verify_heap() {
+    if (!head) {
+        printf("Empty head\n");
+        return;
+    }
+
+    Block* curr_block = head;
+    int overlap_counter = 0;
+
+    while (curr_block->next) {
+        if ((char*)curr_block+BLOCK_SIZE+curr_block->size > (char*)(curr_block->next)) {
+            printf("Overlap of blocks at %p with %p\n", (void*)curr_block, (void*)(curr_block->next));
+            overlap_counter++;
+        }
+        curr_block = curr_block->next;
+    }
+
+    if (!overlap_counter) {
+        printf("No overlaps\n");
+    } else {
+        printf("%d overlaps\n",overlap_counter);
     }
 }
