@@ -82,7 +82,10 @@ void* jamalloc(size_t size) {
 }
 
 void jamfree(void* ptr) {
+    if (!ptr) return;
+    
     Block* curr_block = (Block*)ptr-1;
+    if (curr_block->free) printf("Pointer already free\n");
     curr_block->free = true;
 }
 
