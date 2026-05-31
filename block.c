@@ -1,5 +1,6 @@
 #include "block.h"
 #include <stdbool.h>
+#include <stddef.h>
 
 void init_block(Block* block, size_t alsize, bool is_free) {
     block->size = alsize;

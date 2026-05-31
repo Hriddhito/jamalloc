@@ -1,4 +1,8 @@
 #include "jamalloc.h"
+#include "block.h"
+#include "heap.h"
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 
 static char heap[HEAP_SIZE];
@@ -8,15 +12,29 @@ static Block* head=NULL;
 static Block* tail=NULL;
 
 static void reshape_free_mem(Block* start, Block* end, size_t cum_size, size_t alsize) {
-    start->next = end->next;
-    /*
+    
     if (cum_size > alsize) {
+        size_t free_space = cum_size - alsize;
+
         Block* temp = (Block*)((char*)start+alsize+BLOCK_SIZE);
-        init_block(start, alsize, true);
-        temp->next = end->next;
-        end->next = temp;
+
+        if (free_space < BLOCK_SIZE + 16) {
+            reuse_block(start, cum_size);
+            return;
+        }
+
+        init_block(temp, free_space-BLOCK_SIZE, true);
+
+        if (end->next) {
+            temp->next = end->next;
+        } else {
+            tail = temp;
+        }
+        start->next = temp;
+    } else {
+        start->next = end->next;
     }
-        */
+    reuse_block(start,alsize);
 }
 
 static Block* create_new_block(size_t *heap_ptr, size_t alsize) {
@@ -72,8 +90,6 @@ void* jamalloc(size_t size) {
     new_block = get_free_block(alsize);
     if (!new_block) {
         new_block = create_new_block(&heap_ptr, alsize);
-    } else {
-        reuse_block(new_block, alsize);
     }
 
     if (!new_block) return NULL;
@@ -85,8 +101,31 @@ void jamfree(void* ptr) {
     if (!ptr) return;
     
     Block* curr_block = (Block*)ptr-1;
-    if (curr_block->free) printf("Pointer already free\n");
+    if (curr_block->free) { 
+        printf("Pointer already free\n");
+        return;
+    }
+
     curr_block->free = true;
+
+    if (curr_block->next && curr_block->next->free) {
+        curr_block->size = curr_block->size + BLOCK_SIZE + curr_block->next->size;
+        curr_block->next = curr_block->next->next;
+        if (!curr_block->next)
+            tail = curr_block;
+    }
+    
+    Block* prev = head;
+    while (prev) {
+        if (prev->next == curr_block && prev->free) {
+            prev->size = prev->size + BLOCK_SIZE + curr_block->size;
+            prev->next = curr_block->next;
+            if (!prev->next)
+                tail = prev;
+            break;
+        }
+        prev = prev->next;
+    }
 }
 
 void dump_heap() {
