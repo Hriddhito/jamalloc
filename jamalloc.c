@@ -72,6 +72,7 @@ static Block* get_free_block(size_t alsize) {
                 reshape_free_mem(block, counter, cum_size, alsize);
                 return block;
             }
+            cum_size += BLOCK_SIZE;
         } else {
             cum_size = 0;
             block = counter->next;
